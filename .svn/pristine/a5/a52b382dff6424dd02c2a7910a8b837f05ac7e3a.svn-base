@@ -1,0 +1,71 @@
+/*
+ * gps.c
+ *
+ * Created: 2/24/2012 11:33:38 PM
+ *  Author: Harindra
+ */ 
+
+#include <avr/io.h>
+#define F_CPU 7372800UL
+#include <util/delay.h>
+#include <stdlib.h>
+#include "nmea.h"
+#include "hd44780.h"
+#include "ui.h"
+#include "usart.h"
+#include "button.h"
+
+
+
+int main(void)
+{
+	
+	
+	_delay_ms(50);//wait for the LCD to startup before sending commands
+	init_HD44780();
+	initButtonHandler();
+	init_USART();
+	sei();//Enable global interrupts.
+
+	write_HD44780_Command(DIS_ON_CUR_OFF_BLNK_OFF);
+	lcdUI1();//Setup UI
+
+	while(1){
+		parseNMEA();
+
+
+		
+		if(flag==1){
+			if(buttonChanged){
+				clearDisplay(1,5,16);//Clear lattitude field
+				clearDisplay(2,5,16);//clear longitude field
+				clearDisplay(4,1,16);
+				buttonChanged=0;
+			}	
+		displayDecimalLattitude();
+		displayDecimalLongitude();
+		displayLocalTimeAtColRow(1,4);
+		displaySatsUsed(9,4);
+
+		}else if(flag==2){
+			if(buttonChanged){
+				clearDisplay(1,5,16);//Clear lattitude field
+				clearDisplay(2,5,16);//clear longitude field
+				clearDisplay(4,1,16);
+				buttonChanged=0;
+			}
+			displayLattitudeDegressMinutes();
+			displayLongitudeDegressMinutes();
+			displayHeadingAt(1,4);
+			displayAltitudeAt(9,4);
+		}	
+		displayVerticalSpeedAtColRow(5,3);
+		displayFixMode(16,3);
+		//
+		//char b[2];
+		//sprintf(b,"%d",flag);
+		//write_HD44780_DataAtRowCol(4,16,b);
+
+	}
+	return 0;
+}

@@ -1,0 +1,20 @@
+#include "usart.h"
+#include<avr/io.h>
+#include "buffer.h"
+
+void init_USART(){
+	UBRRH=UBRRH_VALUE;
+	UBRRL=UBRRL_VALUE;
+	UCSRB|=(1<<RXCIE)|(1<<RXEN);
+	
+	UCSRC|=(1<<URSEL)|(1<<UCSZ0)|(1<<UCSZ1);
+	UCSRC&=~(1<<URSEL);
+	
+}
+
+ISR(USART_RXC_vect){
+//copy data into buffer
+writeToBuffer((uint8_t)UDR);
+}
+
+

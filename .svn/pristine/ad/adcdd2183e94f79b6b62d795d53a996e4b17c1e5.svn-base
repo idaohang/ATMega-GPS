@@ -1,0 +1,43 @@
+#ifndef NMEA_H
+#define NMEA_H
+	#include "buffer.h"
+	#include<stdio.h>
+
+	extern char longitude[11];
+	extern char lattitude[10];
+
+	extern short lat_deg;
+	extern short lat_min;
+	extern float lat_sec;
+
+	extern short lon_deg;
+	extern short lon_min;
+	extern float lon_sec;
+
+	extern float lat_decimal;
+	extern float lon_decimal;
+
+	extern char lon_;
+	extern char lat_;
+	extern char utcTime[10];
+	extern short fixMode;
+	extern float MSL_Altitude;
+	extern float course;
+	extern float speed;
+
+	/*void init_NMEA_Engine();*/
+	extern void parseNMEA();
+	void processGGA();
+	void processGLL();
+	void processVTG();
+	//extern char readFromBuffer();
+	void readNextParameter(char* store);
+
+	void latDegMinSec();
+	void lonDegMinSec();
+#endif
+
+
+
+
+

@@ -1,0 +1,33 @@
+#include "buffer.h"
+#include<stdlib.h>
+#include<string.h>
+
+short writePointer=0;
+short readPointer=0;
+short currentSize=0;
+
+volatile uint8_t data[BUFFER_SIZE];//data
+
+     
+uint8_t readFromBuffer(){
+        uint8_t ret='@';
+		if(!isEmpty()){
+	        ret = data[readPointer];
+			currentSize--;
+	        readPointer = (readPointer + 1) & (BUFFER_SIZE-1); // This is the useful point is choosing the array length to be a power of two
+		}else ret='@';
+		return ret;
+}
+ 
+void writeToBuffer(uint8_t newByte){
+ 		if(!isFull()){
+	        data[writePointer] = newByte;
+			currentSize++;
+	        writePointer = (writePointer + 1) & (BUFFER_SIZE-1); // This is the useful point is choosing the array length to be a power of two
+		}
+}
+
+void flushBuffer(){}
+int isFull(){return (currentSize==BUFFER_SIZE);}
+int isEmpty(){return (currentSize==0);}
+

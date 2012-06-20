@@ -1,0 +1,30 @@
+/*
+ * ui.c
+ *
+ * Created: 6/13/2012 1:14:48 PM
+ *  Author: Harindra
+ */ 
+#include "hd44780.h"
+#include "ui.h"
+#include "nmea.h"
+
+
+void displayLocalTimeAtColRow(short col,short row){
+	utcToLocalTime();
+		char buff[6];
+		buff[5]='\0';
+		
+		if(hour<10 && min<10){
+			sprintf(buff,"0%d:0%d",hour,min);
+		}else if(hour<10){
+			sprintf(buff,"0%d:%d",hour,min);
+		}else if(min<10){
+			sprintf(buff,"%d:0%d",hour,min);
+		}else{
+			sprintf(buff,"%d:%d",hour,min);
+		}			
+				
+		write_HD44780_DataAtColRow(row,col,buff);
+		write_HD44780_DataAtColRow(row,col+5,time_of_day);
+}
+

@@ -1,0 +1,66 @@
+/*
+ * ui.c
+ *
+ * Created: 6/13/2012 1:14:48 PM
+ *  Author: Harindra
+ */ 
+#include "hd44780.h"
+#include "ui.h"
+#include "nmea.h"
+
+
+void displayLocalTimeAtColRow(short col,short row){
+		utcToLocalTime();
+		char buff[6];
+		buff[5]='\0';
+		
+		if(hour<10 && min<10){
+			sprintf(buff,"0%d:0%d%s",hour,min,time_of_day);
+		}else if(hour<10){
+			sprintf(buff,"0%d:%d%s",hour,min,time_of_day);
+		}else if(min<10){
+			sprintf(buff,"%d:0%d%s",hour,min,time_of_day);
+		}else{
+			sprintf(buff,"%d:%d%s",hour,min,time_of_day);
+		}			
+				
+		write_HD44780_DataAtRowCol(row,col,buff);
+		
+}
+void displayLattitudeAtColRow(short col,short row){
+		//write_HD44780_DataAtRowCol(col,row,lattitude);
+		char buff[14];
+		
+		
+		char c[2];
+		c[0]=(char)223;
+		c[1]='\0';
+		sprintf(buff,"Lat:%2d%s%2d'%2.2f\"",lat_deg,c,lat_min,lat_sec);
+		write_HD44780_DataAtRowCol(row,col,buff);
+		
+}
+
+void displayLongitudeAtColRow(short col,short row){
+		char buff[16];
+		//buff[14]='\0'; //null terminate
+		
+		char c[2];
+		c[0]=(char)223;
+		c[1]='\0';
+		sprintf(buff,"Lon:%2d%s%2d'%2.2f\"",lon_deg,c,lon_min,lon_sec);
+		
+		write_HD44780_DataAtRowCol(row,col,buff);
+}
+
+void displayDecimalLattitudeAtColRow(short col,short row){
+	char buff[12];
+	sprintf(buff,"Lat:%.8f",lat_decimal);
+	write_HD44780_DataAtRowCol(row,col,buff);
+}
+
+void displayDecimalLongitudeAtColRow(short col,short row){
+	char buff[12];
+	sprintf(buff,"Lon:%.8f",lon_decimal);
+	write_HD44780_DataAtRowCol(row,col,buff);
+}
+

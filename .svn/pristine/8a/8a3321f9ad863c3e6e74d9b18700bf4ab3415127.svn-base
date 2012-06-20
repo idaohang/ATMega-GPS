@@ -1,0 +1,30 @@
+/*
+ * nmea_fsm.c
+ *
+ * Created: 6/17/2012 10:15:02 PM
+ *  Author: Harindra
+ */ 
+#include "nmea_fsm.h"
+
+enum State{
+	Idle,
+	RetrieveMsgID,
+	RetireveSentenceData,
+	RetrieveChecksum,
+	RetrieveEndOfSentence,
+	WaitForNextMessage, //Multipart messages, ex: GPGSV
+	DisplayData,
+	Timeout
+};
+
+State _state;
+
+void init_NMEA_FSM(){
+	_state=State.Idle;
+	
+	switch(_state){
+		
+		
+	}
+	
+}

@@ -1,0 +1,72 @@
+/*
+ * nmea_fsm.h
+ *
+ * Created: 6/17/2012 10:07:27 PM
+ *  Author: Harindra
+ */ 
+
+
+#ifndef NMEA_FSM_H_
+#define NMEA_FSM_H_
+
+	
+	#include "ui.h"
+	#include "button.h"
+	#include "buffer.h"
+	#include "hd44780.h"
+	#include<math.h>
+	
+	#include<stdio.h>
+	extern short lat_deg;
+	extern double lat_min;
+	
+	
+	extern short lon_deg;
+	extern double lon_min;
+	
+
+	extern float lat_decimal;
+	extern float lon_decimal;
+
+	extern char lon_[2];
+	extern char lat_[2];
+	extern char utcTime[11];
+	extern char fixMode[2];
+	extern short satsUsed;
+	extern float MSL_Altitude;
+	extern short HDOP;
+	extern float MSL_Altitude;
+	extern char altitudeUnit[2];
+	extern float geoidSeperation;
+	extern char geoidSeparationUnit[2];
+	extern char checksum[3];
+	extern float course;
+	extern float speed;
+
+	extern short hour;
+	extern short min;
+	extern char time_of_day[3];
+
+
+	
+	extern void init_NMEA_FSM();
+	extern void utcToLocalTime();
+	void clearBuffer(char* buffer,short length);
+	void processGGA();
+	void processVTG();
+	void processRMC();
+	void displayData();
+	void idle();
+	void retrieveMsgId();
+	void retrieveSentenceData();
+	void verifyChecksum();
+	void retrieveEndOfSentence();
+	void handleTimeout();
+	void readNextParameter(char* store,short amount);
+	void skipNextParameter();
+	void cookLattitudeCoordinates();
+	void cookLongitudeCoordinates();
+	void makeNullTerminating(char* str,int length);
+	int timeadd(int a,int hours,int minutes);
+
+#endif /* NMEA_FSM_H_ */

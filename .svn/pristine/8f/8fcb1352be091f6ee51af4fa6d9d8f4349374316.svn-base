@@ -1,0 +1,24 @@
+/*
+ * ui.h
+ *
+ * Created: 6/13/2012 1:14:28 PM
+ *  Author: Harindra
+ */ 
+
+
+#ifndef UI_H_
+#define UI_H_
+
+
+extern void displayLocalTimeAtColRow(short col,short row);
+extern void displayLattitudeAtColRow();
+extern void displayLongitudeAtColRow();
+extern void displayDecimalLattitudeAtColRow();
+extern void displayDecimalLongitudeAtColRow();
+extern void displayFixModeAtColRow(short col,short row);
+extern void displaySatsUsedAtColRow(short col,short row);
+extern void displayLattitudeDegressMinutesAtColRow();
+extern void displayLongitudeDegressMinutesAtColRow();
+extern void displayVerticalSpeedAtColRow(short col,short row);
+extern void lcdUI1();
+#endif /* UI_H_ */

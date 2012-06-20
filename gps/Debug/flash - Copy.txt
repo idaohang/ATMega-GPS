@@ -1,0 +1,4 @@
+@echo off
+cls
+avrdude -c avrisp2 -p m32 -P com9 -u -U lfuse:w:0xfd:m -U hfuse:w:0x99:m 
+pause

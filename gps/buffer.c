@@ -1,0 +1,33 @@
+#include "buffer.h"
+#include<stdlib.h>
+#include<string.h>
+#include "hd44780.h"
+static short writePointer=0;
+static short readPointer=0;
+static short currentSize=0;
+
+volatile char data[BUFFER_SIZE];//data
+
+     
+char readFromBuffer(){
+       char ret='@'; 
+		if(!isEmpty()){
+	        ret= data[readPointer];
+			currentSize--;
+	        readPointer = (readPointer + 1) & (BUFFER_SIZE-1); // This is the useful point is choosing the array length to be a power of two
+		}else ret='@';
+		return ret;
+}
+ 
+void writeToBuffer(char newByte){
+ 		if(!isFull()){
+	        data[writePointer] = newByte;
+			currentSize++;
+	        writePointer = (writePointer + 1) & (BUFFER_SIZE-1); // This is the useful point is choosing the array length to be a power of two
+		}
+}
+
+
+int isFull(){return (currentSize==BUFFER_SIZE-1);}
+int isEmpty(){return (currentSize==0);}
+

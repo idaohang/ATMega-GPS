@@ -1,0 +1,49 @@
+/*
+ * button.c
+ *
+ * Created: 6/15/2012 6:12:37 PM
+ *  Author: Harindra
+ */ 
+#include "button.h"
+#include <avr/io.h>
+#include "hd44780.h"
+#include <avr/interrupt.h>
+
+short flag;
+
+void delay(int ms){
+	for(int i=0;i<=ms;i++)
+	{
+		_delay_ms(50);
+	}
+}			
+ void initButtonHandler(){
+	flag=1;
+	DDRC=0x00;//Make port C as output
+	PORTC=0xff;//enable all pull-ups
+	
+	TCCR1B|=(1<<CS11);// prescaling
+	TIMSK|=(1<<TOIE1);
+}
+
+
+ISR(TIMER1_OVF_vect){
+	if(!(PINC & (1<<PC7) )){
+		
+		while(!(PINC & (1<<PC7) ));
+		delay(2);
+		//clearDisplay(1,5,16);//Clear lattitude field
+		///clearDisplay(2,5,16);//clear longitude field
+		if(flag!=2){
+			//
+			
+			flag++;
+			//char buff[2];
+			//sprintf(buff,"%d",flag);
+			//write_HD44780_DataAtRowCol(1,1,buff);
+			//
+		}else{ flag=1;}
+	}			
+			
+		
+}

@@ -1,0 +1,52 @@
+/*
+ * button.c
+ *
+ * Created: 6/15/2012 6:12:37 PM
+ *  Author: Harindra
+ */ 
+#include "button.h"
+#include <avr/io.h>
+#include "hd44780.h"
+#include <avr/interrupt.h>
+
+short flag;
+volatile short buttonChanged=0;
+
+void delay(int ms){
+	for(int i=0;i<=ms;i++)
+	{
+		_delay_ms(50);
+	}
+}			
+ void initButtonHandler(){
+	flag=1;
+	DDRC|=(1<<DDC7);//PIN 7 of PORT C is input
+	PORTC|=(1<<PC7);//Enable pull-up of PIN 7 of PORT C
+	
+	TCCR1B|=(1<<CS11);// prescaling
+	TIMSK|=(1<<TOIE1);//enable timer overflow interrupt
+}
+
+
+ISR(TIMER1_OVF_vect){
+	if(!(PINC & (1<<PC7) )){
+		
+		while(!(PINC & (1<<PC7) ));//wait for the button to be released
+		delay(2);//simple de-bouncing
+		
+		if(flag<2){
+			//
+			buttonChanged=1;
+			flag++;
+			//char buff[2];
+			//sprintf(buff,"%d",flag);
+			//write_HD44780_DataAtRowCol(1,1,buff);
+			//
+		}else{
+			flag=1;
+			buttonChanged=1;
+		}
+	}			
+			
+		
+}

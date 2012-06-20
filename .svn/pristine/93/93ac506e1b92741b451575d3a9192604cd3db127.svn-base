@@ -1,0 +1,122 @@
+/*
+ * ui.c
+ *
+ * Created: 6/13/2012 1:14:48 PM
+ *  Author: Harindra
+ */ 
+#include "hd44780.h"
+#include "ui.h"
+#include "nmea.h"
+
+char strLat[5]="Lat:";
+char strLon[5]="Lon:";
+char strSats[6]="Sats:";
+char strSpeed[5]="Spd:";
+char strFix[5]="Fix:";
+char strCourse[4]="Crs:";
+char strAltitude[5]="Alt:";
+
+void lcdUI1(){// Degree Minutes Seconds view
+	write_HD44780_Command(CLEAR_DISPLAY);
+	write_HD44780_DataAtRowCol(1,1,strLat);//start printing value at 5th column
+	write_HD44780_DataAtRowCol(2,1,strLon);//value should be at 5th column
+	write_HD44780_DataAtRowCol(3,1,strSpeed);
+	write_HD44780_DataAtRowCol(3,12,strFix);
+	write_HD44780_DataAtRowCol(4,1,strCourse);
+}
+
+void lcdUI2(){
+	write_HD44780_Command(CLEAR_DISPLAY);
+}
+void displayLocalTimeAtColRow(short col,short row){
+		utcToLocalTime();
+		char buff[6];
+		buff[5]='\0';
+		
+		if(hour<10 && min<10){
+			sprintf(buff,"0%d:0%d%s",hour,min,time_of_day);
+		}else if(hour<10){
+			sprintf(buff,"0%d:%d%s",hour,min,time_of_day);
+		}else if(min<10){
+			sprintf(buff,"%d:0%d%s",hour,min,time_of_day);
+		}else{
+			sprintf(buff,"%d:%d%s",hour,min,time_of_day);
+		}			
+				
+		write_HD44780_DataAtRowCol(row,col,buff);
+		
+}
+void displayLattitudeAtColRow(){
+		//write_HD44780_DataAtRowCol(col,row,lattitude);
+		char buff[14];
+		char c[2];
+		c[0]=(char)223;
+		c[1]='\0';
+		sprintf(buff,"%2d%s%2d'%2.2f\"",lat_deg,c,lat_min,lat_sec);
+		write_HD44780_DataAtRowCol(1,5,buff);		
+}
+
+void displayLongitudeAtColRow(){
+		char buff[16];
+		//buff[14]='\0'; //null terminate
+		
+		char c[2];
+		c[0]=(char)223;
+		c[1]='\0';
+		sprintf(buff,"%2d%s%2d'%2.2f\"",lon_deg,c,lon_min,lon_sec);
+		
+		write_HD44780_DataAtRowCol(2,5,buff);
+}
+
+void displayDecimalLattitudeAtColRow(){
+	char buff[12];
+	char c=(char)223;
+	sprintf(buff,"%9.7f%c%s",lat_decimal,c,lat_);
+	write_HD44780_DataAtRowCol(1,5,buff);
+}
+
+void displayDecimalLongitudeAtColRow(){
+	char buff[12];
+	char c=(char)223;
+	sprintf(buff,"%9.7f%c%s",lon_decimal,c,lon_);
+	write_HD44780_DataAtRowCol(2,5,buff);
+}
+
+void displayFixModeAtColRow(short col,short row){
+	char buff[2];
+		
+	if(fixMode!=0){
+		
+		sprintf(buff,"Y");
+		}else{
+		//clearDisplay(row,col+6,col+7);
+		sprintf(buff,"N");
+		}		
+	write_HD44780_DataAtRowCol(row,col,buff);
+}
+
+void displaySatsUsedAtColRow(short col,short row){
+	char buff[7];
+	sprintf(buff,"Sats:%d",satsUsed);
+	write_HD44780_DataAtRowCol(row,col,buff);
+}
+
+void displayLattitudeDegressMinutesAtColRow(){
+	char buff[17];
+	char c=(char)223;
+	sprintf(buff,"%2d%c%6.4f'%s",lat_deg,c,lat_dec_min,lat_);
+	write_HD44780_DataAtRowCol(1,5,buff);
+}
+
+void displayLongitudeDegressMinutesAtColRow(){
+	char buff[17];
+	char c=(char)223;
+	sprintf(buff,"%d%c%6.4f'%s",lon_deg,c,lon_dec_min,lon_);
+	write_HD44780_DataAtRowCol(2,5,buff);
+}
+
+void displayVerticalSpeedAtColRow(short col,short row){
+	char buff[15];
+	sprintf(buff,"%.2f",speed);
+	write_HD44780_DataAtRowCol(row,col,buff);
+}	

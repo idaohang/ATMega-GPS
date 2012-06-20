@@ -1,0 +1,12 @@
+#include<avr/io.h>
+#include<avr/interrupt.h>
+
+#ifndef F_CPU
+#define F_CPU 12000000UL
+#endif
+
+#define BAUD 4800
+#include <util/setbaud.h>
+
+void init_USART();
+

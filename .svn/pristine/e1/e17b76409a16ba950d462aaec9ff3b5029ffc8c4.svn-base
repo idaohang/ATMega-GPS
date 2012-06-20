@@ -1,0 +1,167 @@
+#include "nmea.h"
+#include<stdlib.h>
+#include<string.h>
+#include "buffer.h"
+#include<math.h>
+
+char tempBuffer[15];//Temporarily hold parameters
+char longitude[11];
+char lattitude[10];
+
+short lon_deg=0;
+short lon_min=0;
+float lon_sec=0;
+
+short lat_deg=0;
+short lat_min=0;
+float lat_sec=0;
+
+float lat_decimal=0;
+float lon_decimal=0;
+
+char lon_; // N, S
+char lat_;// E,W
+char utcTime[10];
+short fixMode=0; //false- no fix, true-valid fix
+float MSL_Altitude;
+float course=0;
+float speed=0;
+
+
+/*char nmea1[]="$GPVTG,309.62,T, ,M,0.13,N,0.2,K,A*23\r\n$GPGGA,142046.883,0722.0698,N,08002.2521,E,";
+//"$GPGGA,142046.883,0722.0698,N,08002.2521,E,1,04,2.2,-58.2,M,,,,0000*11\r\n";
+int j=0;
+//Just for debugging the parser
+char readFromBuffer(){
+	return nmea1[j++];
+}*/
+void latDegMinSec(){
+	char tempLat[3];//Hold degrees
+	char tempLat1[8];//Hold minutes part, mm.mmmm
+	float mins;
+	memset(tempLat,0,2);//Clear contents of tempLat
+	memcpy(tempLat,lattitude,2);
+	tempLat[2]='\0';//null terminate
+	lat_deg=atoi(tempLat);//convert to integer and store
+
+	
+	memset(tempLat1,0,6);//clear contents of tempLat1
+	memcpy(tempLat1,&lattitude[2],7);
+	tempLat1[7]='\0';//null terminate
+	mins=atof(tempLat1);//Convert tempLat1 to float
+
+	lat_min=(short)floor(mins); //get floor value	
+	lat_sec=(mins-floor(mins))*60;//store seconds
+
+	lat_decimal=(lat_deg/1.0)+(mins/60);
+}
+
+void lonDegMinSec(){
+	char tempLat[4];//Hold degrees
+	char tempLat1[10];//Hold minutes part, mm.mmmm
+	float mins;
+	memset(tempLat,0,3);//Clear contents of tempLat
+	memcpy(tempLat,longitude,3);
+	tempLat[3]='\0';//null terminate
+	lon_deg=atoi(tempLat);//convert to integer and store
+
+	
+	memset(tempLat1,0,6);//clear contents of tempLat1
+	memcpy(tempLat1,&longitude[3],7);
+	tempLat1[8]='\0';//null terminate
+	mins=atof(tempLat1);//Convert tempLat1 to float
+
+	lon_min=(short)floor(mins); //get floor value	
+	lon_sec=(mins-floor(mins))*60;//store seconds
+
+	lon_decimal=(lon_deg/1.0)+(mins/60);
+}
+
+
+
+void readNextParameter(char* store){
+	char temp;
+	while((temp=readFromBuffer())!=','){
+		if(temp!='@') *store++=temp;//if temp=@, it means that buffer is empty. wait for data.
+	}
+	
+}
+void parseNMEA(){
+	char temp;
+	char szSentenceType[6];//MSG ID is exactly 5 characters long
+	while((temp=readFromBuffer())!='$');//Seek $ then exit loop and execute code below
+
+		//Read sentence type identifier
+		readNextParameter(szSentenceType);
+		szSentenceType[5]='\0';// Make sentenceType a null terminating one
+		
+		
+		if(strcmp(szSentenceType,"GPGGA")==0){
+			processGGA();
+		}else if(strcmp(szSentenceType,"GPGLL")==0){
+			processGLL();
+		}else if(strcmp(szSentenceType,"GPVTG")==0){
+			processVTG();
+		}
+
+}
+//float a;
+void processGGA(){
+	char temp;
+
+	memset(utcTime,'\0',15);
+	readNextParameter(utcTime);
+	
+	memset(lattitude,'\0',10);
+	readNextParameter(lattitude);
+	lattitude[9]='\0';
+	latDegMinSec();
+	
+	readNextParameter(&lat_);//N,S indicator
+
+	memset(longitude,'\0',11);
+	readNextParameter(longitude);
+	longitude[10]='\0';
+	lonDegMinSec();
+
+	readNextParameter(&lon_);// E,W indicator
+	
+	readNextParameter(&temp);
+	fixMode=atoi(&temp);	//Position validity	
+
+
+	readNextParameter(&temp);
+	//satsUsed=atoi(&temp);
+
+
+	readNextParameter(tempBuffer); //skip HDOP
+
+	memset(tempBuffer,'\0',15);
+	readNextParameter(tempBuffer);
+	MSL_Altitude=atof(tempBuffer);
+
+	//discard all the others for now
+	
+		
+}
+
+
+void processGLL(){
+
+
+}
+void processVTG(){
+	
+	memset(tempBuffer,0,15);
+	readNextParameter(tempBuffer);//course
+	course=atof(tempBuffer);
+	
+	readNextParameter(tempBuffer);//reference
+	readNextParameter(tempBuffer);//course
+	readNextParameter(tempBuffer);//reference
+	readNextParameter(tempBuffer);//speed knots
+	readNextParameter(tempBuffer);//unit knots
+	memset(tempBuffer,0,15);
+	readNextParameter(tempBuffer);//speed km/hr
+	speed=atof(tempBuffer);
+}

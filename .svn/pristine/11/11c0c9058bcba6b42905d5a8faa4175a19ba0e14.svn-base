@@ -1,0 +1,16 @@
+/*
+ * gps.c
+ *
+ * Created: 2/24/2012 11:33:38 PM
+ *  Author: Harindra
+ */ 
+
+#include <avr/io.h>
+
+int main(void)
+{
+    while(1)
+    {
+        //TODO:: Please write your application code 
+    }
+}

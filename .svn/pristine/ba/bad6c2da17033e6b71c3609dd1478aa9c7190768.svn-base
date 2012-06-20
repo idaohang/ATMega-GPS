@@ -1,0 +1,198 @@
+#include "nmea.h"
+#include<stdlib.h>
+#include<string.h>
+#include "buffer.h"
+
+#include<math.h>
+
+char tempBuffer[15];//Temporarily hold parameters
+char longitude[11];
+char lattitude[10];
+
+short lon_deg=0;
+short lon_min=0;
+
+double lon_dec_min;
+
+short lat_deg=0;
+short lat_min=0;
+
+double lat_dec_min;
+
+float lat_decimal=0;
+float lon_decimal=0;
+
+char lon_[2]; // N, S
+char lat_[2];// E,W
+char utcTime[11];
+short fixMode=0; //false- no fix, true-valid fix
+short satsUsed=0;
+float MSL_Altitude;
+float course=0;
+float speed=0;
+
+//time related variables
+short hour;
+short min;
+char time_of_day[3];
+
+void makeNullTerminating(char* str,int length){
+	str[length-1]='\0';
+}
+
+void clearBuffer(char* buffer,short length){
+	for(int i=9;i<length-1;i++){//do not clear the last position. it holds nul
+		buffer[i]='0';
+	}
+}
+
+void latDegMinSec(){
+	double tempLat=atof(lattitude);
+	lat_deg=floor(tempLat/100.00);
+	lat_min=floor(tempLat-(lat_deg*100));
+	//lat_sec=(tempLat-((lat_deg*100)+lat_min))*60;
+	
+	lat_dec_min=tempLat-(lat_deg*100);
+	lat_decimal=(lat_deg+ (tempLat-(lat_deg*100))/60.0);
+}
+
+void lonDegMinSec(){
+	double tempLon=atof(longitude);
+	lon_deg=floor(tempLon/100.00);
+	lon_min=floor(tempLon-(lon_deg*100));
+	//lon_sec=(tempLon-((lon_deg*100)+lon_min))*60;
+	
+	lon_dec_min=(tempLon-(lon_deg*100));
+	lon_decimal=(lon_deg+(tempLon-(lon_deg*100))/60.0);
+}
+
+
+
+void readNextParameter(char* store){
+	char temp;
+	while((temp=readFromBuffer())!=','){
+		if(temp!='@'){
+		 *store=temp;//if temp=@, it means that buffer is empty. wait for data.
+		 store++;
+		}else if(temp=='\r')//check if it is the end of the line 
+			if(temp='\n')
+				break;	//exit the reader 	 
+	}
+	
+}
+void parseNMEA(){
+	
+	char szSentenceType[6];//MSG ID is exactly 5 characters long
+	while(readFromBuffer()!='$');//Seek $ then exit loop and execute code below
+
+		//Read sentence type identifier
+		readNextParameter(szSentenceType);
+		makeNullTerminating(szSentenceType,6);// Make sentenceType a null terminating one
+				
+		if(strcmp(szSentenceType,"GPGGA")==0){
+			processGGA();
+			//}
+		//}else if(strcmp(szSentenceType,"GPGLL")==0){
+			//processGLL();
+		}else if(strcmp(szSentenceType,"GPVTG")==0){
+			processVTG();
+		}
+				
+
+}
+//float a;
+
+void utcToLocalTime(){
+	char temp[5];
+	
+	//memset function causing problems. Just go simple
+
+	for(int i=0;i<4;i++)temp[i]=utcTime[i];
+	
+	makeNullTerminating(temp,5);
+	int ut=atoi(temp);
+	//5 Hours and 30mins ahead of UTC
+	hour=(ut/100)+5;
+	min=(ut%100)+30;
+	
+	if(min>59){
+		hour+=min/60;
+		min%=60;
+	}
+	
+	if(hour<13){
+		time_of_day[0]='A';
+		time_of_day[1]='M';
+	}else{
+		time_of_day[0]='P';
+		time_of_day[1]='M';
+	}
+	if(hour>24)	hour-=24;
+	else if(hour>12)hour-=12;
+}
+void processGGA(){
+	char temp[3];
+
+	makeNullTerminating(temp,3);
+	makeNullTerminating(utcTime,11);
+	readNextParameter(utcTime);
+	
+	makeNullTerminating(lattitude,10);
+	readNextParameter(lattitude);
+	
+	latDegMinSec();
+	
+	makeNullTerminating(lat_,2);
+	readNextParameter(lat_);//N,S indicator
+	
+	
+	makeNullTerminating(longitude,11);
+	readNextParameter(longitude);
+	
+	lonDegMinSec();
+
+	makeNullTerminating(lon_,2);
+	readNextParameter(lon_);// E,W indicator
+	
+	readNextParameter(temp);
+	fixMode=atoi(temp);	//Position validity	
+
+	clearBuffer(temp,3);
+	readNextParameter(temp);
+	satsUsed=atoi(temp);
+
+	readNextParameter(tempBuffer); //skip HDOP
+
+	clearBuffer(tempBuffer,15);
+	makeNullTerminating(tempBuffer,15);
+	readNextParameter(tempBuffer);
+	MSL_Altitude=atof(tempBuffer);
+
+	////discard all the others for now
+
+}
+
+
+void processGLL(){
+
+
+}
+void processVTG(){
+	
+	makeNullTerminating(tempBuffer,15);
+	clearBuffer(tempBuffer,15);
+	readNextParameter(tempBuffer);//course
+	course=atof(tempBuffer);
+	
+	skipNextParameter();//reference
+	skipNextParameter();//course
+	skipNextParameter();//reference
+	skipNextParameter();//speed knots
+	skipNextParameter();//unit knots
+	clearBuffer(tempBuffer,15);
+	readNextParameter(tempBuffer);//speed km/hr
+	speed=atof(tempBuffer);
+}
+void skipNextParameter(){	
+	while((readFromBuffer())!=',');	
+}

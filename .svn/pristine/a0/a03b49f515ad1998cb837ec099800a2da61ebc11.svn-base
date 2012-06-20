@@ -1,0 +1,42 @@
+/*
+ * gps.c
+ *
+ * Created: 2/24/2012 11:33:38 PM
+ *  Author: Harindra
+ */ 
+
+#include <avr/io.h>
+#define F_CPU 7372800UL
+#include <util/delay.h>
+#include <stdlib.h>
+#include "nmea.h"
+#include "hd44780.h"
+#include "ui.h"
+#include "usart.h"
+
+int main(void)
+{
+	init_USART();
+	
+	_delay_ms(100);//wait for the LCD to startup before sending commands
+	init_HD44780();
+	
+
+	
+		///DDRD=0xff;
+		sei();
+		//int i=0;
+	while(1){
+		parseNMEA();
+		//write_HD44780_DataAtColRow(1,1,&utcTime);
+		displayLocalTimeAtColRow(1,1);
+		//_delay_ms(200);
+		//_delay_ms(200);
+		//
+		//i++;
+		//char buf[10];
+		//write_HD44780_DataAtColRow(1,1,itoa(i,buf,10));
+		
+		
+	}
+}

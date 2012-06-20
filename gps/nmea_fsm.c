@@ -1,0 +1,380 @@
+/*
+ * nmea_fsm.c
+ *
+ * Created: 6/17/2012 10:15:02 PM
+ *  Author: Harindra
+ */ 
+#include "nmea_fsm.h"
+#include<string.h>
+#include<stdlib.h>
+
+char tempBuffer[15];//Temporarily hold parameters
+char longitude[11];
+char lattitude[10];
+char msgID[6];
+
+short lon_deg=0;
+double lon_min=0;
+
+short lat_deg=0;
+double lat_min=0;
+
+double lat_decimal=0;
+double lon_decimal=0;
+
+char lon_[2]; // N, S
+char lat_[2];// E,W
+char utcTime[11];
+char fixMode[2]; //false- no fix, true-valid fix
+short satsUsed=0;
+short HDOP=0;
+double MSL_Altitude;
+char altitudeUnit[2];
+double geoidSeperation;
+char geoidSeparationUnit[2];
+char checksum[3];
+
+double course=0;
+double speed=0;
+
+//time related variables
+short hour;
+short min;
+char time_of_day[3];
+
+typedef enum state{
+	Idle,
+	RetrieveMsgID,
+	RetrieveSentenceData,
+	VerifyChecksum,
+	RetrieveEndOfSentence,
+	WaitForNextMessage, //Multipart messages, ex: GPGSV
+	DisplayData,
+	Timeout
+} State;
+
+static State current_state;
+
+void init_NMEA_FSM(){
+	current_state=Idle;
+	lcdUI1();
+	makeNullTerminating(msgID,6);
+	
+	while(1){
+		switch(current_state){
+			case Idle:
+			idle();
+			break;
+			case RetrieveMsgID:
+			retrieveMsgId();
+			break;
+			case RetrieveSentenceData:
+			retrieveSentenceData();
+			break;
+			case VerifyChecksum:
+			//verifyChecksum();
+			break;
+			case RetrieveEndOfSentence:
+			//retrieveEndOfSentence();
+			break;
+			case WaitForNextMessage:
+			break;
+			case DisplayData:
+			displayData();
+			break;
+			case Timeout:
+			//handleTimeOut();
+			break;
+		}
+	}		
+}
+
+void idle(){
+	while(readFromBuffer()!='$'); //Wait for the $ to come along
+	current_state=RetrieveMsgID;//Change the machine state
+}
+
+void retrieveMsgId(){
+	readNextParameter(msgID,5);
+	current_state=RetrieveSentenceData;
+}
+
+void retrieveSentenceData(){
+	if(strcmp(msgID,"GPRMC")==0){//processRMC
+		processRMC();
+	}else if(strcmp(msgID,"GPGGA")==0){//processGGA
+		processGGA();
+	}		
+	current_state=DisplayData;	
+}
+
+//void verifyChecksum(){
+	////for(int i=0;i<2;i++)checksum[i]=readFromBuffer(); //read two characters from the buffer. It is the checksum
+	////Just skip checksum verification
+	//current_state=RetrieveEndOfSentence;
+//}
+//
+//void retrieveEndOfSentence(){
+	//char temp;
+	//char temp2;
+	//
+	//do{
+		//temp=readFromBuffer();
+		//if(temp=='\r'){//check if it is the end of the line 
+			//temp2=temp;
+			//if(temp=='\n' && temp2=='\r')break;	//end of sentence,exit the reader 	 
+		//}
+	//}while(1);
+	//current_state=DisplayData;
+//}
+
+void displayData(){
+			
+		if(flag==1){
+			if(buttonChanged){
+				clearDisplay(1,5,16);//Clear lattitude field
+				clearDisplay(2,5,16);//clear longitude field
+				clearDisplay(4,1,16);//Clear the last row of the LCD
+				buttonChanged=0;
+			}	
+		displayDecimalLattitude();
+		displayDecimalLongitude();
+		displayLocalTimeAtColRow(1,4);
+		displaySatsUsed(9,4);
+
+		}else if(flag==2){
+			if(buttonChanged){
+				clearDisplay(1,5,16);//Clear lattitude field
+				clearDisplay(2,5,16);//clear longitude field
+				clearDisplay(4,1,16);//Clear the last row of the LCD
+				buttonChanged=0;
+			}
+			displayLattitudeDegressMinutes();
+			displayLongitudeDegressMinutes();
+			displayHeadingAt(1,4);
+			displayAltitudeAt(9,4);
+		}	
+		displayVerticalSpeedAtColRow(5,3);
+		displayFixMode(16,3);
+		current_state=Idle;
+}
+
+void handleTimeOut(){
+	current_state=Idle;
+}
+
+void processGGA(){
+	//$GPGGA,161229.487,3723.2475,N,12158.3416,W,1,07,1.0,9.0,M, , , ,0000*18
+	//$msgId,utcTime,Lat,marker,Lon,market,fixmode,satsUsed,HDOP,altitude,unit_altitude,geoid_separation,units,DGPSFiled,DGPSField*checksum (*18),<CR><LF>
+	char temp[3];
+	
+	makeNullTerminating(temp,3);
+	makeNullTerminating(utcTime,11);
+	readNextParameter(utcTime,10);
+	
+	makeNullTerminating(lattitude,10);
+	readNextParameter(lattitude,9);
+	cookLattitudeCoordinates();
+	
+	makeNullTerminating(lat_,2);
+	readNextParameter(lat_,1);//N,S indicator
+		
+	makeNullTerminating(longitude,11);
+	readNextParameter(longitude,10);
+	cookLongitudeCoordinates();
+
+	makeNullTerminating(lon_,2);
+	readNextParameter(lon_,1);// E,W indicator
+
+	skipNextParameter();//skip fixmode
+	
+	clearBuffer(temp,3);
+	readNextParameter(temp,2);
+	satsUsed=atoi(temp);
+
+	clearBuffer(tempBuffer,15);//ensure that i won't get strange values
+	makeNullTerminating(tempBuffer,15);
+	readNextParameter(tempBuffer,4); //HDOP
+	HDOP=atof(tempBuffer);
+	
+	clearBuffer(tempBuffer,15);
+	makeNullTerminating(tempBuffer,15);
+	readNextParameter(tempBuffer,5);
+	MSL_Altitude=atof(tempBuffer);
+	
+	readNextParameter(altitudeUnit,1);
+	
+	clearBuffer(tempBuffer,15);
+	readNextParameter(tempBuffer,4);
+	geoidSeperation=atof(tempBuffer);
+	
+	readNextParameter(geoidSeparationUnit,1);
+	readNextParameter(tempBuffer,4);//skip DGPS field
+	readNextParameter(tempBuffer,5);//skip DGPS field
+}
+
+void processRMC(){
+	//$GPRMC,161229.487,A,3723.2475,N,12158.3416,W,0.13,309.62,120598,,*10
+	//$msgID,utcTime,A forFix V for invalid fix,lat,maker,lon,marker,speed,heading,date,
+	char temp[3];
+
+	makeNullTerminating(temp,3);
+	makeNullTerminating(utcTime,11);
+	readNextParameter(utcTime,10);
+	
+	//Position validity	
+	makeNullTerminating(fixMode,2);
+	readNextParameter(fixMode,2);
+		
+	makeNullTerminating(lattitude,10);
+	readNextParameter(lattitude,9);
+	cookLattitudeCoordinates();
+	
+	makeNullTerminating(lat_,2);
+	readNextParameter(lat_,2);//N,S indicator
+		
+	makeNullTerminating(longitude,11);
+	readNextParameter(longitude,10);
+	cookLongitudeCoordinates();
+
+	clearBuffer(lon_,2);
+	makeNullTerminating(lon_,2);
+	readNextParameter(lon_,2);// E,W indicator
+	
+	
+	clearBuffer(tempBuffer,15);
+	makeNullTerminating(tempBuffer,15);
+	readNextParameter(tempBuffer,5);
+	speed=atof(tempBuffer);
+	
+	clearBuffer(tempBuffer,15);
+	readNextParameter(tempBuffer,5);
+	course=atof(tempBuffer);
+	
+	char date[7];
+	makeNullTerminating(date,7);
+	readNextParameter(date,6);
+	
+}
+
+
+void clearBuffer(char* buffer,short length){
+	for(int i=0;i<length-1;i++){//do not clear the last position. it holds nul
+		buffer[i]=' ';
+	}
+}
+
+void readNextParameter(char* store,short amount){
+	char temp;
+	short count=1;//this is to keep track of how many characters i've read. Important to avoid problems on cold start.
+	//the gps module takes time to output NMEA on cold start.
+//$ Firmware Version : JNavi_Ver4.2 *3D
+//$ Model Name : NAVIUS *64
+//$*00
+//$ ComPort A : NMEA 4800 *08
+//$ ComPort B : NONE 38400 *35
+//$ GGA : 1 *4A
+//$ GLL : 0 *4D
+//$ GSA : 1 *5E
+//$ GSV : 1 *49
+//$ RMC : 1 *57
+//$ VTG : 0 *4F
+//$ USER : 9 *12
+//$ WAAS : 0 *0E
+//$ PowerSave : 0 *74
+//$ PowerOnTime : 500 *44
+//$ PSaveInterval : 2 *46
+//$ Static(Heading Fix) : 1 *0D
+//$ Track Smooth Mode : 1 *45
+//$ Save Last 3D Point : 0 *1A
+//$ H.dop Mask : 49 *3E
+//$ Crack Mode : 0 *51
+//$ Power Mask : 25 *76
+//$ Degraded Mode : 4 *3D
+//$ Degraded Time : 30 *1C
+//$ DR Time : 15 *3D
+//$ DATUM : WGS84 *3C
+//
+	char temp2=' ';
+	
+	temp=readFromBuffer();
+	while(temp!=',' && temp!='*'){	
+		
+		if(temp!='@' && count<=amount){
+		 *store=temp;//if temp=@, it means that buffer is empty. wait for data.
+		 store++;
+		 count++;
+		}	
+		if(temp=='\r')temp2=temp;
+		if(temp=='\n' &&temp2=='\r')break;// end of sentence
+		temp=readFromBuffer();		
+	}
+}
+
+void makeNullTerminating(char* str,int length){
+	str[length-1]='\0';
+}
+
+void cookLattitudeCoordinates(){
+	double tempLat=atof(lattitude);
+	lat_deg=floor(tempLat/100.00);
+	lat_min=tempLat-(lat_deg*100);
+
+	lat_decimal=(lat_deg+ (tempLat-(lat_deg*100))/60.0);
+}
+
+void cookLongitudeCoordinates(){
+	double tempLon=atof(longitude);
+	lon_deg=floor(tempLon/100.00);
+	lon_min=tempLon-(lon_deg*100);
+		
+	lon_decimal=(lon_deg+(tempLon-(lon_deg*100))/60.0);
+}
+
+int timeadd(int a,int hours,int minutes){
+	int i=0,j=0;//i hours,j minutes
+	i=a/100;
+	j=a-(i*100);
+	
+	j+=minutes;
+	if(j>=60){
+		i=i+(j/60);
+		j=(j%60);
+	}
+	i+=hours;
+	if(i>=24)i-=24;
+	
+	return (i*100+j);
+}
+
+void utcToLocalTime(){
+	char temp[5];
+		
+	memcpy(temp,utcTime,4);
+	makeNullTerminating(temp,5);
+	int ut=atoi(temp);
+	//5 Hours and 30mins ahead of UTC
+	ut=timeadd(ut,5,30);
+	hour=(ut/100);
+	min=(ut%100);
+		
+	if(ut<1200){
+		memcpy(time_of_day,"AM",2);
+	}
+	else{
+		memcpy(time_of_day,"PM",2);
+	}		
+		
+	if(hour==0)hour=12;
+	else if(hour>12)hour-=12;
+}
+
+
+void skipNextParameter(){
+	char temp;
+	temp=readFromBuffer();	
+	while(temp!=',' && temp!='*'){
+		temp=readFromBuffer();
+	}
+}
+

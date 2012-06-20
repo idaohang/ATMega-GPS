@@ -1,0 +1,24 @@
+#include "usart.h"
+#include<avr/io.h>
+#include "buffer.h"
+
+#define F_CPU 7372800UL
+#define USART_BAUDRATE 4800
+#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+void init_USART(){
+	UBRRH = (BAUD_PRESCALE >> 8);
+	UBRRL = BAUD_PRESCALE; 
+
+	
+	UCSRB |= (1 << RXEN) | (1<<RXCIE);   // Turn on the reception
+	UCSRC |= (1 << URSEL) | (1 << UCSZ0) | (1 << UCSZ1); // Use 8-bit character sizes 
+}
+
+ISR(USART_RXC_vect){
+//copy data into buffer
+	writeToBuffer(UDR);
+	
+}
+
+
+

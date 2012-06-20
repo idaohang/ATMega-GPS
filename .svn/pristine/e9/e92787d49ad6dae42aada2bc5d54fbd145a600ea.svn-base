@@ -1,0 +1,192 @@
+#include "nmea.h"
+#include<stdlib.h>
+#include<string.h>
+#include "buffer.h"
+
+#include<math.h>
+
+char tempBuffer[15];//Temporarily hold parameters
+char longitude[11];
+char lattitude[10];
+
+short lon_deg=0;
+short lon_min=0;
+double lon_sec=0;
+double lon_dec_min;
+
+short lat_deg=0;
+short lat_min=0;
+double lat_sec=0;
+double lat_dec_min;
+
+float lat_decimal=0;
+float lon_decimal=0;
+
+char lon_; // N, S
+char lat_;// E,W
+char utcTime[11];
+short fixMode=0; //false- no fix, true-valid fix
+short satsUsed0;
+float MSL_Altitude;
+float course=0;
+float speed=0;
+
+//time related variables
+short hour;
+short min;
+char time_of_day[3];
+
+void makeNullTerminating(char* str,int length){
+	str[length-1]='\0';
+}
+
+double roundToDecimalPoints(float number,int decimalPoints){
+	float f=number*pow(10,decimalPoints);
+	int myNumber=(int)f;
+	return myNumber/pow(10,decimalPoints);
+}
+void latDegMinSec(){
+	double tempLat=atof(lattitude);
+	lat_deg=floor(tempLat/100.00);
+	lat_min=floor(tempLat-(lat_deg*100));
+	lat_sec=(tempLat-((lat_deg*100)+lat_min))*60;
+	
+	lat_dec_min=tempLat-(lat_deg*100);
+	lat_decimal=(lat_deg+ (tempLat-(lat_deg*100))/60.0);
+}
+
+void lonDegMinSec(){
+	double tempLon=atof(longitude);
+	lon_deg=floor(tempLon/100.00);
+	lon_min=floor(tempLon-(lon_deg*100));
+	lon_sec=(tempLon-((lon_deg*100)+lon_min))*60;
+	
+	lon_dec_min=(tempLon-(lon_deg*100));
+	lon_decimal=(lon_deg+(tempLon-(lon_deg*100))/60.0);
+}
+
+v
+
+void readNextParameter(char* store){
+	char temp;
+	while((temp=readFromBuffer())!=','){
+		if(temp!='@'){
+		 *store=temp;//if temp=@, it means that buffer is empty. wait for data.
+		 store++;
+		}		 
+	}
+	
+}
+void parseNMEA(){
+	char temp;
+	char szSentenceType[6];//MSG ID is exactly 5 characters long
+	while((temp=readFromBuffer())!='$');//Seek $ then exit loop and execute code below
+
+		//Read sentence type identifier
+		readNextParameter(szSentenceType);
+		szSentenceType[5]='\0';// Make sentenceType a null terminating one
+		
+		
+		if(strcmp(szSentenceType,"GPGGA")==0){
+			
+			processGGA();
+			}
+		//}else if(strcmp(szSentenceType,"GPGLL")==0){
+			//processGLL();
+		//}else if(strcmp(szSentenceType,"GPVTG")==0){
+			//processVTG();
+		//}
+				
+
+}
+//float a;
+
+void utcToLocalTime(){
+	char temp[5];
+	
+	//memset function causing problems. Just go simple
+	
+	temp[0]=utcTime[0];
+	temp[1]=utcTime[1];
+	temp[2]=utcTime[2];
+	temp[3]=utcTime[3];
+	makeNullTerminating(temp,5);
+	int ut=atoi(temp);
+	hour=ut/100;
+	hour+=5;
+	min=(ut%100);
+	min+=30;
+	
+	if(min>59){
+		hour+=min/60;
+		min%=60;
+	}
+	
+	if(hour<13){
+		time_of_day[0]='A';
+		time_of_day[1]='M';
+	}else{
+		time_of_day[0]='P';
+		time_of_day[1]='M';
+	}
+	if(hour>24)	hour-=24;
+	else if(hour>12)hour-=12;
+}
+void processGGA(){
+	char temp;
+
+	makeNullTerminating(utcTime,11);
+	readNextParameter(utcTime);
+	
+	makeNullTerminating(lattitude,10);
+	readNextParameter(lattitude);
+	
+	latDegMinSec();
+	
+	readNextParameter(&lat_);//N,S indicator
+
+	makeNullTerminating(longitude,11);
+	readNextParameter(longitude);
+	
+	lonDegMinSec();
+
+	readNextParameter(&lon_);// E,W indicator
+	
+	readNextParameter(&temp);
+	fixMode=(short)temp;	//Position validity	
+
+	readNextParameter(&temp);
+	satsUsed=(short)temp;
+//
+//
+	//readNextParameter(tempBuffer); //skip HDOP
+//
+	//memset(tempBuffer,'\0',15);
+	//readNextParameter(tempBuffer);
+	//MSL_Altitude=atof(tempBuffer);
+//
+	////discard all the others for now
+	//
+		//
+}
+
+
+void processGLL(){
+
+
+}
+void processVTG(){
+	
+	memset(tempBuffer,0,15);
+	readNextParameter(tempBuffer);//course
+	course=atof(tempBuffer);
+	
+	readNextParameter(tempBuffer);//reference
+	readNextParameter(tempBuffer);//course
+	readNextParameter(tempBuffer);//reference
+	readNextParameter(tempBuffer);//speed knots
+	readNextParameter(tempBuffer);//unit knots
+	memset(tempBuffer,0,15);
+	readNextParameter(tempBuffer);//speed km/hr
+	speed=atof(tempBuffer);
+}
