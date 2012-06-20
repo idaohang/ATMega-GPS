@@ -135,11 +135,8 @@ void displayData(){
 				clearDisplay(1,5,16);//Clear lattitude field
 				clearDisplay(2,5,16);//clear longitude field
 				clearDisplay(4,1,16);//Clear the last row of the LCD
-				clearDisplay(3,1,16);
 				buttonChanged=0;
 			}	
-		write_HD44780_DataAtRowCol(3,1,strSpeed);
-		write_HD44780_DataAtRowCol(3,12,strFix);
 		displayDecimalLattitude();
 		displayDecimalLongitude();
 		displayLocalTimeAtColRow(1,4);
@@ -151,7 +148,6 @@ void displayData(){
 				clearDisplay(1,5,16);//Clear lattitude field
 				clearDisplay(2,5,16);//clear longitude field
 				clearDisplay(4,1,16);//Clear the last row of the LCD
-				clearDisplay(3,1,16);
 				buttonChanged=0;
 			}
 			displayLattitudeDegressMinutes();
@@ -205,9 +201,7 @@ void processGGA(){
 	clearBuffer(tempBuffer,15);
 	makeNullTerminating(tempBuffer,15);
 	readNextParameter(tempBuffer,5);
-	MSL_Altitude=atof(tempBuffer);
-	
-	if(MSL_Altitude<0)MSL_Altitude*=-1;
+	MSL_Altitude=(-1)*atof(tempBuffer);
 	
 	readNextParameter(altitudeUnit,1);
 	
