@@ -11,7 +11,7 @@
 #include "nmea_fsm.h"
 #include "usart.h"
 #include <util/delay.h>
-
+//nmea.h is no longer used. instead, nmea_fsm.h will be used
 int main(void)
 {
 	_delay_ms(20);//wait for the LCD to startup before sending commands
