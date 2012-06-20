@@ -141,7 +141,8 @@ void displayData(){
 		displayDecimalLongitude();
 		displayLocalTimeAtColRow(1,4);
 		displaySatsUsed(9,4);
-
+		displayFixMode(16,3);
+		displayVerticalSpeedAtColRow(5,3);
 		}else if(flag==2){
 			if(buttonChanged){
 				clearDisplay(1,5,16);//Clear lattitude field
@@ -151,11 +152,11 @@ void displayData(){
 			}
 			displayLattitudeDegressMinutes();
 			displayLongitudeDegressMinutes();
-			displayHeadingAt(1,4);
-			displayAltitudeAt(9,4);
+			displayHeadingAt(1,3);
+			displayAltitudeAt(1,4);
 		}	
-		displayVerticalSpeedAtColRow(5,3);
-		displayFixMode(16,3);
+		
+		
 		current_state=Idle;
 }
 
@@ -237,7 +238,7 @@ void processRMC(){
 	readNextParameter(longitude,10);
 	cookLongitudeCoordinates();
 
-	clearBuffer(lon_,2);
+	
 	makeNullTerminating(lon_,2);
 	readNextParameter(lon_,2);// E,W indicator
 	
